@@ -1,0 +1,278 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TESTER
+  DEVELOPER
+  VIEWER
+}
+
+enum CaseStatus {
+  NOT_RUN
+  PASS
+  FAIL
+  BLOCKED
+}
+
+enum RunStatus {
+  ACTIVE
+  SIGNED_OFF
+}
+
+enum DefectStatus {
+  OPEN
+  FIXED
+  RETEST_PASSED
+  RETEST_FAILED
+  CLOSED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  role         Role     @default(TESTER)
+  passwordHash String?
+  authProvider String   @default("password")
+  externalId   String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  invitesSent      Invite[]     @relation("InviteCreatedBy")
+  testedCases      RunCase[]    @relation("RunCaseTestedBy")
+  events           CaseEvent[]
+  defectsAssigned  Defect[]     @relation("DefectAssignee")
+  defectsReported  Defect[]     @relation("DefectReporter")
+  attachments      Attachment[]
+  auditLogs        AuditLog[]
+  shareLinks       ShareLink[]
+}
+
+model Invite {
+  id          String    @id @default(cuid())
+  email       String
+  name        String?
+  role        Role      @default(TESTER)
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdById String
+  createdBy   User      @relation("InviteCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model Project {
+  id             String         @id @default(cuid())
+  key            String         @unique
+  name           String
+  description    String?
+  devBaseUrl     String?
+  clientName     String?
+  clientLogoUrl  String?
+  defectSeq      Int            @default(0)
+  archived       Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  cases          TemplateCase[]
+  runs           Run[]
+  defects        Defect[]
+}
+
+model TemplateCase {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  caseKey       String
+  module        String
+  title         String
+  role          String?
+  path          String?
+  priority      String   @default("P2")
+  type          String   @default("Functional")
+  preconditions String?
+  steps         String?
+  expected      String?
+  testData      String?
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([projectId, caseKey])
+  @@index([projectId, sortOrder])
+}
+
+model Run {
+  id            String     @id @default(cuid())
+  projectId     String
+  project       Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name          String
+  environment   String     @default("dev")
+  buildTag      String?
+  baseUrl       String?
+  clientName    String?
+  clientLogoUrl String?
+  status        RunStatus  @default(ACTIVE)
+  startedAt     DateTime   @default(now())
+  endedAt       DateTime?
+  lockedAt      DateTime?
+  reportId      String?    @unique
+  reportHash    String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  cases         RunCase[]
+  defects       Defect[]
+  shareLinks    ShareLink[]
+  signOffs      SignOff[]
+  auditLogs     AuditLog[]
+}
+
+model RunCase {
+  id            String       @id @default(cuid())
+  runId         String
+  run           Run          @relation(fields: [runId], references: [id], onDelete: Cascade)
+  caseKey       String
+  module        String
+  title         String
+  role          String?
+  path          String?
+  priority      String
+  type          String
+  preconditions String?
+  steps         String?
+  expected      String?
+  testData      String?
+  sortOrder     Int
+  status        CaseStatus   @default(NOT_RUN)
+  actualResult  String?
+  testedById    String?
+  testedBy      User?        @relation("RunCaseTestedBy", fields: [testedById], references: [id])
+  testedByName  String?
+  testedAt      DateTime?
+  needsRetest   Boolean      @default(false)
+  version       Int          @default(0)
+  updatedAt     DateTime     @updatedAt
+  events        CaseEvent[]
+  attachments   Attachment[]
+  defects       Defect[]
+
+  @@unique([runId, caseKey])
+  @@index([runId, sortOrder])
+}
+
+// Append-only. Rows are never updated or deleted by the app.
+model CaseEvent {
+  id         String      @id @default(cuid())
+  runCaseId  String
+  runCase    RunCase     @relation(fields: [runCaseId], references: [id], onDelete: Cascade)
+  kind       String
+  status     CaseStatus?
+  note       String?
+  data       Json?
+  actorId    String?
+  actor      User?       @relation(fields: [actorId], references: [id])
+  actorName  String?
+  createdAt  DateTime    @default(now())
+
+  @@index([runCaseId, createdAt])
+}
+
+model Attachment {
+  id           String   @id @default(cuid())
+  runCaseId    String
+  runCase      RunCase  @relation(fields: [runCaseId], references: [id], onDelete: Cascade)
+  eventId      String?
+  defectId     String?
+  storageKey   String   @unique
+  fileName     String
+  mimeType     String
+  size         Int      @default(0)
+  confirmed    Boolean  @default(false)
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+model Defect {
+  id            String       @id @default(cuid())
+  projectId     String
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  runId         String
+  run           Run          @relation(fields: [runId], references: [id], onDelete: Cascade)
+  runCaseId     String
+  runCase       RunCase      @relation(fields: [runCaseId], references: [id], onDelete: Cascade)
+  code          String
+  number        Int
+  title         String
+  note          String?
+  severity      String       @default("P2")
+  status        DefectStatus @default(OPEN)
+  reportedById  String?
+  reportedBy    User?        @relation("DefectReporter", fields: [reportedById], references: [id])
+  assigneeId    String?
+  assignee      User?        @relation("DefectAssignee", fields: [assigneeId], references: [id])
+  fixRef        String?
+  fixedByName   String?
+  fixedAt       DateTime?
+  retestResult  CaseStatus?
+  retestedBy    String?
+  retestedAt    DateTime?
+  version       Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@unique([projectId, code])
+  @@index([runId, status])
+}
+
+model ShareLink {
+  id          String    @id @default(cuid())
+  runId       String
+  run         Run       @relation(fields: [runId], references: [id], onDelete: Cascade)
+  label       String
+  tokenHash   String    @unique
+  tokenHint   String
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  lastUsedAt  DateTime?
+  createdById String?
+  createdBy   User?     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model SignOff {
+  id        String   @id @default(cuid())
+  runId     String
+  run       Run      @relation(fields: [runId], references: [id], onDelete: Cascade)
+  name      String
+  role      String
+  company   String?
+  signedAt  DateTime @default(now())
+  userId    String?
+}
+
+// Append-only audit trail of every change.
+model AuditLog {
+  id         String   @id @default(cuid())
+  runId      String?
+  run        Run?     @relation(fields: [runId], references: [id], onDelete: Cascade)
+  projectId  String?
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id])
+  actorName  String?
+  action     String
+  entity     String
+  entityId   String?
+  data       Json?
+  createdAt  DateTime @default(now())
+
+  @@index([runId, createdAt])
+  @@index([projectId, createdAt])
+}
