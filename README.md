@@ -19,7 +19,7 @@ Stack: Node 20+, TypeScript, Express 5, Prisma, PostgreSQL, S3 compatible storag
 ## Run locally
 
 ```bash
-cp .env.example .env          # set DATABASE_URL, JWT_SECRET, SEED_ADMIN_*
+cp .env.example .env          # set DATABASE_URL, DIRECT_URL, JWT_SECRET, SEED_ADMIN_*
 npm install
 npx prisma migrate deploy
 npm run db:seed               # IMS, V-Vault, V-Sign, admin, sample V-Vault cases
@@ -51,4 +51,4 @@ npm run typecheck
 
 ## Railway
 
-`railway.json` builds with `npm ci && npm run build` and starts with `npm run start:railway` (runs `prisma migrate deploy`, then the server). Health check: `/health`. Set the env vars from `.env.example` in Railway. Run the seed once with `npx prisma db seed` from a Railway shell.
+`railway.json` builds with `npm ci && npm run build` and starts with `npm run start:railway` (runs `prisma migrate deploy`, then the server). Health check: `/health`. Set the env vars from `.env.example` in Railway. With a connection pooler, `DATABASE_URL` is the pooled URL (add `?pgbouncer=true&connection_limit=5` for PgBouncer-style poolers) and `DIRECT_URL` is the direct URL used for migrations. Without a pooler, set both to the same URL. Run the seed once with `npx prisma db seed` from a Railway shell.

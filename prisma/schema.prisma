@@ -2,9 +2,13 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// DATABASE_URL: the URL the app uses. Can be a connection pooler (PgBouncer, Supabase :6543, Neon -pooler, Railway).
+//   With a PgBouncer-style pooler in transaction mode, add ?pgbouncer=true&connection_limit=5 to it.
+// DIRECT_URL: a direct (non-pooled) URL. Prisma uses it for migrations. Without a pooler, set it to the same value as DATABASE_URL.
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {

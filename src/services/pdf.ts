@@ -44,6 +44,7 @@ export async function renderPdf(report: AuditReportData): Promise<Buffer> {
 
   // Cover
   doc.rect(0, 0, doc.page.width, 210).fill(navy);
+  doc.rect(0, 210, doc.page.width, 4).fill('#E6007E'); // VAICS magenta accent line
   doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(13).text(report.brand.company.toUpperCase(), left, 48, { characterSpacing: 1.5 });
   doc.font('Helvetica-Bold').fontSize(30).text('UAT Report', left, 92);
   doc.font('Helvetica').fontSize(14).text(`${report.project.name} for ${client}`, left, 136);
