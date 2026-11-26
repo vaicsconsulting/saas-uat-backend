@@ -167,7 +167,7 @@ describe('export, import results, report, share, sign-off', () => {
     const tc = wb.getWorksheet('Test Cases')!;
     expect(tc.getCell('A1').value).toBe('Test ID');
     expect(tc.getCell('Z1').value).toBe('Final status');
-    expect((tc.getCell('A1').fill as ExcelJS.FillPattern).fgColor?.argb).toBe('FF0D47A1');
+    expect((tc.getCell('A1').fill as ExcelJS.FillPattern).fgColor?.argb).toBe('FF1F3864');
     expect(tc.getCell('A1').font.bold).toBe(true);
     expect(tc.getCell('L3').value).toBe('Pass');
     expect(tc.getCell('R3').value).toBe('DEF-001');

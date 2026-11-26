@@ -8,8 +8,7 @@ import { audit } from './audit';
 import { publish } from './bus';
 import { assertUnlocked } from './runs';
 
-// VAICS deep blue, same as the Change Management System.
-export const NAVY = 'FF0D47A1';
+export const NAVY = 'FF1F3864';
 
 /** Tracker columns in template order. Header text matches the VAICS tracker. */
 export const CASE_COLUMNS = [

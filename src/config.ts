@@ -37,7 +37,7 @@ export const config = {
   },
   brand: {
     company: process.env.BRAND_COMPANY ?? 'VAICS Consulting',
-    primary: process.env.BRAND_PRIMARY ?? '#0D47A1',
+    primary: process.env.BRAND_PRIMARY ?? '#1F3864',
   },
 };
 
